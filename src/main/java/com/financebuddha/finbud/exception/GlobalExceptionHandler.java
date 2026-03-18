@@ -1,61 +1,60 @@
 package com.financebuddha.finbud.exception;
 
-import com.financebuddha.finbud.dto.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    // ✅ Validation errors (DTO validation)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationExceptions(
+    public ResponseEntity<Map<String, Object>> handleValidationExceptions(
             MethodArgumentNotValidException ex) {
 
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach((error) -> {
-            String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
-        });
+        Map<String, String> fieldErrors = new HashMap<>();
 
-        ApiResponse<Map<String, String>> response = new ApiResponse<>(
-                false,
-                "Validation failed",
-                errors
-        );
+        for (FieldError error : ex.getBindingResult().getFieldErrors()) {
+            fieldErrors.put(error.getField(), error.getDefaultMessage());
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("timestamp", LocalDateTime.now());
+        response.put("status", 400);
+        response.put("message", "Validation failed");
+        response.put("errors", fieldErrors);
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiResponse<Object>> handleResourceNotFoundException(
-            ResourceNotFoundException ex) {
+    // ✅ File upload / runtime errors
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Map<String, Object>> handleRuntimeException(
+            RuntimeException ex) {
 
-        ApiResponse<Object> response = ApiResponse.error(ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        Map<String, Object> response = new HashMap<>();
+        response.put("timestamp", LocalDateTime.now());
+        response.put("status", 400);
+        response.put("message", ex.getMessage());
+
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(DuplicateResourceException.class)
-    public ResponseEntity<ApiResponse<Object>> handleDuplicateResourceException(
-            DuplicateResourceException ex) {
-
-        ApiResponse<Object> response = ApiResponse.error(ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
-    }
-
+    // ✅ Fallback (any unknown error)
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Object>> handleGlobalException(Exception ex) {
+    public ResponseEntity<Map<String, Object>> handleGlobalException(
+            Exception ex) {
 
-        ApiResponse<Object> response = ApiResponse.error(
-                "An error occurred: " + ex.getMessage()
-        );
+        Map<String, Object> response = new HashMap<>();
+        response.put("timestamp", LocalDateTime.now());
+        response.put("status", 500);
+        response.put("message", "Internal server error");
 
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }

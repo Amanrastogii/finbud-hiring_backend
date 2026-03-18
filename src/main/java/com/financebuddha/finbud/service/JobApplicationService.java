@@ -1,32 +1,72 @@
 package com.financebuddha.finbud.service;
 
-import com.financebuddha.finbud.dto.JobApplicationRequestDTO;
-import com.financebuddha.finbud.dto.JobApplicationResponseDTO;
+import com.financebuddha.finbud.dto.*;
 import com.financebuddha.finbud.entity.JobApplication;
+import com.financebuddha.finbud.repository.JobApplicationRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.util.List;
 
-public interface JobApplicationService {
+@Service
+@RequiredArgsConstructor
+public class JobApplicationService {
 
-    JobApplicationResponseDTO createApplication(JobApplicationRequestDTO requestDTO);
+    private final JobApplicationRepository repo;
+    private final FileStorageService fileStorage;
+    private final EmailService emailService;
 
-    JobApplicationResponseDTO getApplicationById(Long id);
+    public JobApplicationResponseDTO createApplication(JobApplicationRequestDTO dto) {
 
-    List<JobApplicationResponseDTO> getAllApplications();
+        try {
+            String resumeKey = fileStorage.uploadResume(dto.getResume());
 
-    List<JobApplicationResponseDTO> getApplicationsByPosition(String position);
+            JobApplication app = JobApplication.builder()
+                    .fullName(dto.getFullName())
+                    .email(dto.getEmail())
+                    .phone(dto.getPhone())
+                    .selectedRole(dto.getSelectedRole())
+                    .experience(dto.getExperience())
+                    .currentLocation(dto.getCurrentLocation())
+                    .qualification(dto.getQualification())
+                    .coverLetter(dto.getCoverLetter())
+                    .resumeKey(resumeKey)
+                    .status("SUBMITTED")   // ✅ IMPORTANT
+                    .build();
 
-    List<JobApplicationResponseDTO> getApplicationsByStatus(JobApplication.ApplicationStatus status);
+            app = repo.save(app);
 
-    JobApplicationResponseDTO updateApplicationStatus(Long id, JobApplication.ApplicationStatus status, String remarks);
+            return new JobApplicationResponseDTO(app.getId(), app.getStatus());
 
-    List<JobApplicationResponseDTO> searchApplications(String keyword);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error while creating application");
+        }
+    }
 
-    List<JobApplicationResponseDTO> getApplicationsByExperienceRange(Integer minExp, Integer maxExp);
+    public List<JobApplication> getAllApplications() {
+        try {
+            return repo.findAll();
+        } catch (Exception e) {
+            e.printStackTrace(); // 🔥 will show exact DB issue
+            throw new RuntimeException("Failed to fetch applications");
+        }
+    }
 
-    void deleteApplication(Long id);
+    public JobApplication getById(Long id) {
+        return repo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Application not found"));
+    }
 
-    long getTotalApplications();
+    public JobApplication updateStatus(Long id, String status) {
+        JobApplication app = getById(id);
+        app.setStatus(status);
+        return repo.save(app);
+    }
 
-    long getCountByStatus(JobApplication.ApplicationStatus status);
+    public File getResumeFile(Long id) {
+        JobApplication app = getById(id);
+        return new File("uploads/" + app.getResumeKey());
+    }
 }

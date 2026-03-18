@@ -1,92 +1,35 @@
 package com.financebuddha.finbud.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
-import java.time.LocalDateTime;
+import lombok.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
-@Table(name = "job_applications")
-@Data
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@Getter
+@Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class JobApplication {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long id;   // ✅ FIXED (was UUID)
 
-    @Column(nullable = false, length = 100)
     private String fullName;
-
-    @Column(nullable = false, unique = true, length = 100)
     private String email;
-
-    @Column(nullable = false, length = 15)
     private String phone;
 
-    @Column(nullable = false, length = 100)
-    private String position;
-
-    @Column(nullable = false)
-    private Integer experience;
-
-    @Column(nullable = false, length = 100)
-    private String currentCompany;
-
-    @Column(nullable = false, length = 100)
+    private String selectedRole;
+    private String experience;
     private String currentLocation;
+    private String qualification;
 
-    @Column(nullable = false, length = 50)
-    private String noticePeriod;
-
-    @Column(nullable = false)
-    private Double currentCTC;
-
-    @Column(nullable = false)
-    private Double expectedCTC;
-
-    @Column(length = 200)
-    private String resumeUrl;
-
-    @Column(length = 200)
-    private String linkedinUrl;
-
-    @Column(length = 200)
-    private String portfolioUrl;
-
-    @Column(columnDefinition = "TEXT")
-    private String skills;
-
-    @Column(columnDefinition = "TEXT")
+    @Column(length = 2000)
     private String coverLetter;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private ApplicationStatus status = ApplicationStatus.PENDING;
+    private String resumeKey;
 
-    @Column(length = 500)
-    private String remarks;
-
-    @CreationTimestamp
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(nullable = false)
-    private LocalDateTime updatedAt;
-
-    public enum ApplicationStatus {
-        PENDING,
-        UNDER_REVIEW,
-        SHORTLISTED,
-        INTERVIEW_SCHEDULED,
-        SELECTED,
-        REJECTED,
-        ON_HOLD
-    }
+    private String status = "SUBMITTED";
 }
