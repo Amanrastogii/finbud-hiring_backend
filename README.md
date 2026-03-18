@@ -1,21 +1,20 @@
-# Finbud Hiring Backend 🚀
+# 🚀 Finbud Hiring Backend
 
-Spring Boot backend application for managing the hiring process at Finbud.  
-This system allows HR/Admin to manage job applications, candidates, and hiring workflow efficiently.
+A scalable **Spring Boot backend system** for managing job applications, candidates, and hiring workflows.
+
+This project simulates a real-world hiring system used by companies, including **admin dashboard APIs, resume handling, and status management**.
 
 ---
 
-## 🏢 Project Overview
+## 🧠 Project Overview
 
-Finbud Hiring Backend is a RESTful API built using **Java + Spring Boot**.  
-It provides endpoints to:
+Finbud Hiring Backend is a RESTful API built using **Java + Spring Boot** that allows:
 
-- Create job applications
-- Manage candidate details
-- Validate input data
-- Persist records in MySQL database
-- Handle exceptions globally
-- Map DTOs using ModelMapper
+- 📄 Candidates to submit job applications
+- 📂 Resume upload & secure download
+- 📊 HR/Admin to view and manage applications
+- 🔄 Update candidate status (Shortlisted / Rejected)
+- 🛡️ Basic admin authentication (token-based)
 
 ---
 
@@ -25,31 +24,23 @@ It provides endpoints to:
 - **Spring Boot 3.x**
 - **Spring Data JPA**
 - **Hibernate**
-- **MySQL**
+- **PostgreSQL** ✅
 - **Lombok**
-- **ModelMapper**
 - **Maven**
 
 ---
 
 ## 📂 Project Structure
 
-finbud-hiring_backend
-│
-├── src/main/java/com/financebuddha/finbud
-│ ├── config
-│ ├── controller
-│ ├── dto
-│ ├── entity
-│ ├── exception
-│ ├── repository
-│ └── service
-│
-├── src/main/resources
-│ └── application.properties
-│
-├── pom.xml
-└── README.md
+
+src/
+├── controller/ # REST APIs
+├── service/ # Business logic
+├── repository/ # Database layer
+├── entity/ # JPA entities
+├── dto/ # Data Transfer Objects
+├── config/ # CORS & config classes
+└── exception/ # Global exception handling
 
 
 ---
@@ -61,84 +52,90 @@ finbud-hiring_backend
 ```bash
 git clone https://github.com/Amanrastogii/finbud-hiring_backend.git
 cd finbud-hiring_backend
-
 2️⃣ Configure Database
 
 Update application.properties:
 
-spring.datasource.url=jdbc:mysql://localhost:3306/finbud_db
-spring.datasource.username=root
+spring.datasource.url=jdbc:postgresql://localhost:5432/finbud_db
+spring.datasource.username=your_username
 spring.datasource.password=your_password
 
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
-
 3️⃣ Run Application
-
-Using Maven:
-
 mvn clean install
 mvn spring-boot:run
-
-
-OR run directly from IntelliJ.
-
-Application will start on:
-
+🚀 Server runs at:
 http://localhost:8080
-
-📡 API Endpoints (Example)
+📡 API Endpoints
+📌 Applications
 Method	Endpoint	Description
 POST	/api/applications	Create new application
 GET	/api/applications	Get all applications
 GET	/api/applications/{id}	Get application by ID
-PUT	/api/applications/{id}	Update application
-DELETE	/api/applications/{id}	Delete application
-✅ Features
+PATCH	/api/applications/{id}/status	Update status
+GET	/api/applications/{id}/resume	Download resume
+🔐 Admin Access (Basic)
 
-Clean layered architecture
+Currently implemented:
 
-DTO pattern implementation
+Token-based authentication (admin-token)
 
-Global exception handling
+Protected APIs for admin dashboard
 
-Input validation
+👉 Future upgrade:
 
-RESTful API design
+JWT Authentication
 
-Production-ready Maven configuration
+Role-based access (Admin / HR)
+
+📦 Features
+
+✅ Clean layered architecture
+
+✅ DTO-based design
+
+✅ Global exception handling
+
+✅ Resume upload & download system
+
+✅ Admin dashboard API integration
+
+✅ Status management system
+
+✅ PostgreSQL integration
 
 📌 Future Enhancements
 
-JWT Authentication & Role-based access
+🔐 JWT Authentication & Role-based access
 
-Swagger API Documentation
+☁️ AWS S3 for file storage
 
-Docker Deployment
+📊 Dashboard filters & pagination
 
-CI/CD Integration
+📧 Email notifications (interview updates)
 
-Unit & Integration Tests
+🐳 Docker deployment
+
+⚙️ CI/CD pipeline
+
+🧪 Unit & Integration testing
 
 👨‍💻 Author
 
 Aman Rastogi
 Backend Developer | Java | Spring Boot | System Design
 
-GitHub: https://github.com/Amanrastogii
+🔗 GitHub: https://github.com/Amanrastogii
 
-📜 License
+🔗 LinkedIn: https://www.linkedin.com/in/aman-rastogi
 
-This project is developed for learning and internal company usage.
+⭐ Contribution / Feedback
 
+Feel free to:
 
----
+Fork the repo
 
-# 🚀 After Adding This
+Raise issues
 
-Run:
-
-```bash
-git add README.md
-git commit -m "Updated professional README"
-git push
+Suggest improvements
