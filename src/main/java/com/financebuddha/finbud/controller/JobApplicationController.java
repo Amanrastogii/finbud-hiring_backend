@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -22,7 +21,7 @@ public class JobApplicationController {
 
     private final JobApplicationService service;
 
-    // ✅ CREATE APPLICATION
+    // ✅ CREATE APPLICATION (PUBLIC - NO AUTH)
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<JobApplicationResponseDTO> createApplication(
             @ModelAttribute JobApplicationRequestDTO request) {
@@ -31,27 +30,34 @@ public class JobApplicationController {
                 .body(service.createApplication(request));
     }
 
-    // ✅ GET ALL APPLICATIONS
+    // 🔐 GET ALL APPLICATIONS (JWT PROTECTED via Filter)
     @GetMapping
     public ResponseEntity<?> getAllApplications() {
         try {
             return ResponseEntity.ok(service.getAllApplications());
+
         } catch (Exception e) {
-            e.printStackTrace(); // 🔥 shows error in terminal
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error fetching applications");
         }
     }
 
-    // ✅ GET SINGLE APPLICATION
+    // 🔐 GET SINGLE APPLICATION (JWT PROTECTED)
     @GetMapping("/{id}")
-    public JobApplication getApplication(@PathVariable Long id) {
-        return service.getById(id);
+    public ResponseEntity<?> getApplication(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(service.getById(id));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Application not found");
+        }
     }
 
-    // ✅ DOWNLOAD RESUME
+    // 🔐 DOWNLOAD RESUME (JWT PROTECTED)
     @GetMapping("/{id}/resume")
-    public ResponseEntity<Resource> downloadResume(@PathVariable Long id) throws IOException {
+    public ResponseEntity<?> downloadResume(@PathVariable Long id) throws IOException {
 
         File file = service.getResumeFile(id);
 
@@ -66,12 +72,18 @@ public class JobApplicationController {
                 .body(resource);
     }
 
-    // ✅ UPDATE STATUS
+    // 🔐 UPDATE STATUS (JWT PROTECTED)
     @PatchMapping("/{id}/status")
-    public JobApplication updateStatus(
+    public ResponseEntity<?> updateStatus(
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {
 
-        return service.updateStatus(id, body.get("status"));
+        try {
+            return ResponseEntity.ok(service.updateStatus(id, body.get("status")));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error updating status");
+        }
     }
 }
