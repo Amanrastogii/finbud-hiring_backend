@@ -1,5 +1,7 @@
 package com.financebuddha.finbud.entity;
 
+
+import com.financebuddha.finbud.entity.Status;
 import jakarta.persistence.*;
 import lombok.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -31,5 +33,5 @@ public class JobApplication {
 
     private String resumeKey;
 
-    private String status = "SUBMITTED";
-}
+    @Enumerated(EnumType.STRING)
+    private Status status;}

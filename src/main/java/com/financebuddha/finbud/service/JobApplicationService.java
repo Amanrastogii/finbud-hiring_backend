@@ -2,6 +2,7 @@ package com.financebuddha.finbud.service;
 
 import com.financebuddha.finbud.dto.*;
 import com.financebuddha.finbud.entity.JobApplication;
+import com.financebuddha.finbud.entity.Status; // ✅ ADDED
 import com.financebuddha.finbud.repository.JobApplicationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,12 +33,15 @@ public class JobApplicationService {
                     .qualification(dto.getQualification())
                     .coverLetter(dto.getCoverLetter())
                     .resumeKey(resumeKey)
-                    .status("SUBMITTED")   // ✅ IMPORTANT
+                    .status(Status.SUBMITTED)   // ✅ FIXED
                     .build();
 
             app = repo.save(app);
 
-            return new JobApplicationResponseDTO(app.getId(), app.getStatus());
+            return new JobApplicationResponseDTO(
+                    app.getId(),
+                    app.getStatus().name()   // ✅ FIXED (Enum → String)
+            );
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -49,7 +53,7 @@ public class JobApplicationService {
         try {
             return repo.findAll();
         } catch (Exception e) {
-            e.printStackTrace(); // 🔥 will show exact DB issue
+            e.printStackTrace();
             throw new RuntimeException("Failed to fetch applications");
         }
     }
@@ -61,7 +65,10 @@ public class JobApplicationService {
 
     public JobApplication updateStatus(Long id, String status) {
         JobApplication app = getById(id);
-        app.setStatus(status);
+
+        // ✅ FIXED (String → Enum)
+        app.setStatus(Status.valueOf(status));
+
         return repo.save(app);
     }
 
