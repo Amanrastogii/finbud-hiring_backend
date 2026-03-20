@@ -14,12 +14,13 @@ public class CorsConfig {
 
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
+        // ✅ Allow ALL origins — fixes form submission from Vercel
+        // When you get a custom domain later, restrict this to your domain only
+        config.setAllowedOriginPatterns(List.of("*"));
 
-        // ✅ FIX: Added PATCH — without it, status update calls are blocked
-        // by the browser's CORS preflight check. This was the root cause of
-        // status not updating in the HR Dashboard.
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of(
+                "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
+        ));
 
         config.setAllowedHeaders(List.of("*"));
 
