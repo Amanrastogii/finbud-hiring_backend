@@ -4,13 +4,11 @@ import com.financebuddha.finbud.dto.*;
 import com.financebuddha.finbud.entity.JobApplication;
 import com.financebuddha.finbud.service.JobApplicationService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
 
 @RestController
@@ -21,7 +19,7 @@ public class JobApplicationController {
 
     private final JobApplicationService service;
 
-    // ✅ CREATE APPLICATION (PUBLIC)
+    // ✅ CREATE — public, no auth needed
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<JobApplicationResponseDTO> createApplication(
             @ModelAttribute JobApplicationRequestDTO request) {
@@ -29,7 +27,7 @@ public class JobApplicationController {
                 .body(service.createApplication(request));
     }
 
-    // 🔐 GET ALL APPLICATIONS
+    // 🔐 GET ALL
     @GetMapping
     public ResponseEntity<?> getAllApplications() {
         try {
@@ -41,7 +39,7 @@ public class JobApplicationController {
         }
     }
 
-    // 🔐 GET SINGLE APPLICATION
+    // 🔐 GET ONE
     @GetMapping("/{id}")
     public ResponseEntity<?> getApplication(@PathVariable Long id) {
         try {
@@ -52,24 +50,26 @@ public class JobApplicationController {
         }
     }
 
-    // 🔐 DOWNLOAD RESUME
+    // 🔐 DOWNLOAD RESUME — streams directly from S3
     @GetMapping("/{id}/resume")
-    public ResponseEntity<?> downloadResume(@PathVariable Long id) throws IOException {
+    public ResponseEntity<?> downloadResume(@PathVariable Long id) {
         try {
-            File file = service.getResumeFile(id);
-            if (file == null || !file.exists()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("Resume file not found. It may have been deleted when the server restarted.");
-            }
-            Resource resource = new UrlResource(file.toURI());
+            String resumeKey = service.getResumeKey(id);
+            String filename  = resumeKey != null
+                    ? resumeKey.substring(resumeKey.lastIndexOf("/") + 1)
+                    : "resume.pdf";
+
+            InputStream stream = service.getResumeStream(id);
+
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION,
-                            "attachment; filename=" + file.getName())
-                    .header(HttpHeaders.CONTENT_TYPE, "application/pdf")
-                    .body(resource);
+                            "attachment; filename=\"" + filename + "\"")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(new InputStreamResource(stream));
+
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Resume not available");
+                    .body("Resume not available: " + e.getMessage());
         }
     }
 
@@ -86,7 +86,7 @@ public class JobApplicationController {
         }
     }
 
-    // 🔐 DELETE APPLICATION — NEW ENDPOINT
+    // 🔐 DELETE ONE
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteApplication(@PathVariable Long id) {
         try {
@@ -98,12 +98,12 @@ public class JobApplicationController {
         }
     }
 
-    // 🔐 DELETE ALL APPLICATIONS — for clearing test data
+    // 🔐 DELETE ALL — for clearing test data
     @DeleteMapping("/all")
     public ResponseEntity<?> deleteAllApplications() {
         try {
             service.deleteAllApplications();
-            return ResponseEntity.ok(Map.of("message", "All applications deleted successfully"));
+            return ResponseEntity.ok(Map.of("message", "All applications deleted"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error deleting all applications");

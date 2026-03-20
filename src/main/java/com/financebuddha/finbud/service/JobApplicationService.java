@@ -7,7 +7,7 @@ import com.financebuddha.finbud.repository.JobApplicationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
+import java.io.InputStream;
 import java.util.List;
 
 @Service
@@ -20,6 +20,7 @@ public class JobApplicationService {
 
     public JobApplicationResponseDTO createApplication(JobApplicationRequestDTO dto) {
         try {
+            // ✅ Uploads to S3, returns S3 key like "resumes/uuid.pdf"
             String resumeKey = fileStorage.uploadResume(dto.getResume());
 
             JobApplication app = JobApplication.builder()
@@ -40,17 +41,12 @@ public class JobApplicationService {
 
         } catch (Exception e) {
             e.printStackTrace();
-            throw new RuntimeException("Error while creating application");
+            throw new RuntimeException("Error while creating application: " + e.getMessage());
         }
     }
 
     public List<JobApplication> getAllApplications() {
-        try {
-            return repo.findAll();
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Failed to fetch applications");
-        }
+        return repo.findAll();
     }
 
     public JobApplication getById(Long id) {
@@ -64,34 +60,32 @@ public class JobApplicationService {
         return repo.save(app);
     }
 
-    public File getResumeFile(Long id) {
+    // ✅ Returns S3 InputStream for streaming to frontend
+    public InputStream getResumeStream(Long id) {
         JobApplication app = getById(id);
-        if (app.getResumeKey() == null) return null;
-        return new File("uploads/" + app.getResumeKey());
+        if (app.getResumeKey() == null || app.getResumeKey().isEmpty()) {
+            throw new RuntimeException("No resume found for this application");
+        }
+        return fileStorage.downloadResume(app.getResumeKey());
     }
 
-    // ✅ DELETE SINGLE APPLICATION
+    public String getResumeKey(Long id) {
+        return getById(id).getResumeKey();
+    }
+
+    // ✅ Delete single — also deletes from S3
     public void deleteApplication(Long id) {
         JobApplication app = getById(id);
-        // Try to delete the resume file too
-        try {
-            File resumeFile = new File("uploads/" + app.getResumeKey());
-            if (resumeFile.exists()) resumeFile.delete();
-        } catch (Exception ignored) {}
+        fileStorage.deleteResume(app.getResumeKey());
         repo.deleteById(id);
     }
 
-    // ✅ DELETE ALL APPLICATIONS — for clearing test data
+    // ✅ Delete all — also deletes all S3 files
     public void deleteAllApplications() {
-        // Try to delete all resume files
-        try {
-            File uploadsDir = new File("uploads/");
-            if (uploadsDir.exists()) {
-                for (File f : uploadsDir.listFiles()) {
-                    f.delete();
-                }
-            }
-        } catch (Exception ignored) {}
+        List<JobApplication> all = repo.findAll();
+        for (JobApplication app : all) {
+            fileStorage.deleteResume(app.getResumeKey());
+        }
         repo.deleteAll();
     }
 }
