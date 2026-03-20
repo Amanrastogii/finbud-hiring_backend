@@ -21,21 +21,19 @@ public class JobApplicationController {
 
     private final JobApplicationService service;
 
-    // ✅ CREATE APPLICATION (PUBLIC - NO AUTH)
+    // ✅ CREATE APPLICATION (PUBLIC)
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<JobApplicationResponseDTO> createApplication(
             @ModelAttribute JobApplicationRequestDTO request) {
-
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(service.createApplication(request));
     }
 
-    // 🔐 GET ALL APPLICATIONS (JWT PROTECTED via Filter)
+    // 🔐 GET ALL APPLICATIONS
     @GetMapping
     public ResponseEntity<?> getAllApplications() {
         try {
             return ResponseEntity.ok(service.getAllApplications());
-
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -43,47 +41,72 @@ public class JobApplicationController {
         }
     }
 
-    // 🔐 GET SINGLE APPLICATION (JWT PROTECTED)
+    // 🔐 GET SINGLE APPLICATION
     @GetMapping("/{id}")
     public ResponseEntity<?> getApplication(@PathVariable Long id) {
         try {
             return ResponseEntity.ok(service.getById(id));
-
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("Application not found");
         }
     }
 
-    // 🔐 DOWNLOAD RESUME (JWT PROTECTED)
+    // 🔐 DOWNLOAD RESUME
     @GetMapping("/{id}/resume")
     public ResponseEntity<?> downloadResume(@PathVariable Long id) throws IOException {
-
-        File file = service.getResumeFile(id);
-
-        if (!file.exists()) {
-            return ResponseEntity.notFound().build();
+        try {
+            File file = service.getResumeFile(id);
+            if (file == null || !file.exists()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Resume file not found. It may have been deleted when the server restarted.");
+            }
+            Resource resource = new UrlResource(file.toURI());
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=" + file.getName())
+                    .header(HttpHeaders.CONTENT_TYPE, "application/pdf")
+                    .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Resume not available");
         }
-
-        Resource resource = new UrlResource(file.toURI());
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + file.getName())
-                .body(resource);
     }
 
-    // 🔐 UPDATE STATUS (JWT PROTECTED)
+    // 🔐 UPDATE STATUS
     @PatchMapping("/{id}/status")
     public ResponseEntity<?> updateStatus(
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {
-
         try {
             return ResponseEntity.ok(service.updateStatus(id, body.get("status")));
-
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error updating status");
+        }
+    }
+
+    // 🔐 DELETE APPLICATION — NEW ENDPOINT
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteApplication(@PathVariable Long id) {
+        try {
+            service.deleteApplication(id);
+            return ResponseEntity.ok(Map.of("message", "Application deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error deleting application");
+        }
+    }
+
+    // 🔐 DELETE ALL APPLICATIONS — for clearing test data
+    @DeleteMapping("/all")
+    public ResponseEntity<?> deleteAllApplications() {
+        try {
+            service.deleteAllApplications();
+            return ResponseEntity.ok(Map.of("message", "All applications deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error deleting all applications");
         }
     }
 }

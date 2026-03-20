@@ -2,7 +2,7 @@ package com.financebuddha.finbud.service;
 
 import com.financebuddha.finbud.dto.*;
 import com.financebuddha.finbud.entity.JobApplication;
-import com.financebuddha.finbud.entity.Status; // ✅ ADDED
+import com.financebuddha.finbud.entity.Status;
 import com.financebuddha.finbud.repository.JobApplicationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,7 +19,6 @@ public class JobApplicationService {
     private final EmailService emailService;
 
     public JobApplicationResponseDTO createApplication(JobApplicationRequestDTO dto) {
-
         try {
             String resumeKey = fileStorage.uploadResume(dto.getResume());
 
@@ -33,15 +32,11 @@ public class JobApplicationService {
                     .qualification(dto.getQualification())
                     .coverLetter(dto.getCoverLetter())
                     .resumeKey(resumeKey)
-                    .status(Status.SUBMITTED)   // ✅ FIXED
+                    .status(Status.SUBMITTED)
                     .build();
 
             app = repo.save(app);
-
-            return new JobApplicationResponseDTO(
-                    app.getId(),
-                    app.getStatus().name()   // ✅ FIXED (Enum → String)
-            );
+            return new JobApplicationResponseDTO(app.getId(), app.getStatus().name());
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -65,15 +60,38 @@ public class JobApplicationService {
 
     public JobApplication updateStatus(Long id, String status) {
         JobApplication app = getById(id);
-
-        // ✅ FIXED (String → Enum)
         app.setStatus(Status.valueOf(status));
-
         return repo.save(app);
     }
 
     public File getResumeFile(Long id) {
         JobApplication app = getById(id);
+        if (app.getResumeKey() == null) return null;
         return new File("uploads/" + app.getResumeKey());
+    }
+
+    // ✅ DELETE SINGLE APPLICATION
+    public void deleteApplication(Long id) {
+        JobApplication app = getById(id);
+        // Try to delete the resume file too
+        try {
+            File resumeFile = new File("uploads/" + app.getResumeKey());
+            if (resumeFile.exists()) resumeFile.delete();
+        } catch (Exception ignored) {}
+        repo.deleteById(id);
+    }
+
+    // ✅ DELETE ALL APPLICATIONS — for clearing test data
+    public void deleteAllApplications() {
+        // Try to delete all resume files
+        try {
+            File uploadsDir = new File("uploads/");
+            if (uploadsDir.exists()) {
+                for (File f : uploadsDir.listFiles()) {
+                    f.delete();
+                }
+            }
+        } catch (Exception ignored) {}
+        repo.deleteAll();
     }
 }

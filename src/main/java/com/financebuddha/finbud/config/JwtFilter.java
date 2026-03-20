@@ -22,21 +22,20 @@ public class JwtFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        String path = request.getServletPath(); // ✅ CORRECT
+        String path   = request.getServletPath();
+        String method = request.getMethod();
 
-        // ✅ PUBLIC ROUTES (VERY IMPORTANT)
+        // ✅ PUBLIC ROUTES
         if (
-                path.startsWith("/auth") || // login APIs
-                        (path.startsWith("/applications") && request.getMethod().equals("POST")) || // form submit
-                        request.getMethod().equals("OPTIONS") // CORS preflight
+                path.startsWith("/auth") ||
+                        (path.startsWith("/applications") && method.equals("POST")) ||
+                        method.equals("OPTIONS")
         ) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 🔐 CHECK AUTH HEADER
         String header = request.getHeader("Authorization");
-
         if (header == null || !header.startsWith("Bearer ")) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("Missing Authorization header");
@@ -45,12 +44,8 @@ public class JwtFilter extends OncePerRequestFilter {
 
         try {
             String token = header.substring(7);
-            String user = jwtUtil.validateToken(token);
-
-            if (user == null) {
-                throw new RuntimeException("Invalid token");
-            }
-
+            String user  = jwtUtil.validateToken(token);
+            if (user == null) throw new RuntimeException("Invalid token");
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("Invalid or expired token");
